@@ -99,11 +99,17 @@ func writePacket(conn net.Conn, msg *Message, timeout time.Duration) error {
 func (m *milterSession) Process(msg *Message) (Response, error) {
 	switch Code(msg.Code) {
 	case CodeAbort:
-		// abort current message and start over
-		m.headers = nil
-		m.macros = nil
-		m.backend = m.server.NewMilter()
+		// SMA Disabled this code because we don't want to reset the
+		// session on Abort. Instead we call Milter.Abort which can
+		// decide what to do.
+
+		// // abort current message and start over
+		// m.headers = nil
+		// m.macros = nil
+		// log.Printf("[D] Creating new session: got a CodeAbort")
+		// m.backend = m.server.NewMilter()
 		// do not send response
+		m.backend.Abort()
 		return nil, nil
 
 	case CodeBody:
@@ -152,7 +158,6 @@ func (m *milterSession) Process(msg *Message) (Response, error) {
 			if len(data)%2 == 1 {
 				data = append(data, "")
 			}
-
 			// store data in a map
 			for i := 0; i < len(data); i += 2 {
 				m.macros[data[i]] = data[i+1]
@@ -256,10 +261,16 @@ func (m *milterSession) HandleMilterCommands() {
 				return
 			}
 
-			if !resp.Continue() {
-				// prepare backend for next message
-				m.backend = m.server.NewMilter()
-			}
+			// SMA Disabling this because we don't want to reset the
+			// session.  This is incorrect in the case of one session
+			// on which multiple emails are being processed. (One
+			// HELO, Multiple MAIL FROM commands)
+
+			// if !resp.Continue() {
+			// 	// prepare backend for next message
+			// 	log.Printf("[D] Creating new session: response was not RespContinue from ")
+			// 	m.backend = m.server.NewMilter()
+			// }
 		}
 	}
 }
