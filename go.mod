@@ -1,4 +1,4 @@
-module github.com/emersion/go-milter
+module github.com/st3fan/go-milter
 
 go 1.12
 
